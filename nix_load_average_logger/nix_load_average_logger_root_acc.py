@@ -72,6 +72,13 @@ def auth_root_account(root_account: RootAccount)->RootAccount:
         else:
             root_account.root_account_session_token = None
             root_account.root_account_session_create_timestamp = 0
+            auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
+            if auth_result['IsError'] is False:
+                root_account = auth_result['RootAccountObj']
+    else:
+        auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
+        if auth_result['IsError'] is False:
+            root_account = auth_result['RootAccountObj']
     if root_account.root_account_session_token is None:
         print('error: Failed to authenticate')
         print_help()
@@ -106,10 +113,10 @@ def record_load_average(root_account: RootAccount, thing: Thing):
     thing.thing_sensors['Load Sensor'].sensor_axes['5 Minute Load Average'].add_reading(SensorAxisReading(reading_value=system_load[1]))
     thing.thing_sensors['Load Sensor'].sensor_axes['15 Minute Load Average'].add_reading(SensorAxisReading(reading_value=system_load[2]))
     result = log_data_with_root_account(root_account=root_account, thing=thing)
-    number_of_records_captured = 0
     if result['IsError'] is False:
-        number_of_records_captured = result['RecordsCaptured']
-    print('\tNumber of records captured: {}'.format(number_of_records_captured))
+        print('\tNumber of records captured: {}'.format(result['RecordsCaptured']))
+    else:
+        print('\tError Message: {}'.format(result['ErrorMessage']))
         
 
 def main():

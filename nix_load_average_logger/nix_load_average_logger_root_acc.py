@@ -2,10 +2,10 @@
 
 # Copyright (c) 2018. All rights reserved. OculusD.com, Inc. Please refer to the LICENSE.txt file for full license information. Licensed in terms of the GPLv3 License.
 
-from odc_pycommons import HOME
+from odc_pycommons import HOME, get_utc_timestamp
 from odc_pycommons.models import SensorAxisReading, RootAccount, Thing
-from odc_pyadminlibs.persistence.root_account_persistence import read_root_account_by_email_address
-from odc_pyadminlibs.persistence.thing_persistence import read_all_things_for_linked_root_account_id
+from odc_pyadminlibs.persistence.root_account_persistence import read_root_account_by_email_address, update_root_account_set_session
+from odc_pyadminlibs.persistence.thing_persistence import read_all_things_for_linked_root_account_id, update_thing_token
 from odc_pyadminlibs.actions.authentication import authenticate_root_account, get_thing_token_using_root_account
 from odc_pyadminlibs.actions.data import log_data_with_root_account
 import os, sys, getopt
@@ -39,13 +39,12 @@ def parse_input_args(argv):
         print_help()
 
 
-def get_utc_timestamp(with_decimal: bool=False):
-    epoch = datetime(1970,1,1,0,0,0)
-    now = datetime.utcnow()
-    timestamp = (now - epoch).total_seconds()
-    if with_decimal:
-        return timestamp
-    return int(timestamp)
+def reset_tokens(root_account: RootAccount, thing: Thing):
+    root_account.root_account_session_token = None
+    root_account.root_account_session_create_timestamp = 0
+    thing.thing_token = None
+    update_root_account_set_session(root_account=root_account, persistence_path=HOME, persistence_file='root_account')
+    update_thing_token(thing=thing, persistence_path=HOME, persistence_file='things')
 
 
 def load_root_account()->RootAccount:
@@ -117,6 +116,9 @@ def record_load_average(root_account: RootAccount, thing: Thing):
         print('\tNumber of records captured: {}'.format(result['RecordsCaptured']))
     else:
         print('\tError Message: {}'.format(result['ErrorMessage']))
+    if result['RecordsCaptured'] == 0 or result['IsError'] is True:
+        reset_tokens(root_account=root_account, thing=thing)
+        print('\tBoth root account and thing tokens have been reset. Re-authentication will be forced on the next run')
         
 
 def main():

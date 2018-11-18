@@ -15,8 +15,26 @@ Create a Python virtual environment and install required libraries:
 ```bash
 $ virtualenv -p python3 venv
 $ source vemv/bin/activate
-$ pip3 install https://github.com/oculusd/odc_pycommons/releases/download/release-0.0.2/odc_pycommons-0.0.2.tar.gz
-$ pip3 install https://github.com/oculusd/odc_pyadminlibs/releases/download/r0.0.3/odc_pyadminlibs-0.0.3.tar.gz
+(venv) $ pip3 install https://github.com/oculusd/odc_pycommons/releases/download/release-0.0.2/odc_pycommons-0.0.2.tar.gz
+(venv) $ pip3 install https://github.com/oculusd/odc_pyadminlibs/releases/download/r0.0.3/odc_pyadminlibs-0.0.3.tar.gz
+```
+
+The example shows the method of creating a virtual environment using `virtualenv` - for a more pure Python 
+alternative, [refer to the documentation](https://docs.python.org/3.6/tutorial/venv.html).
+
+If you intent to run the Python scripts using `cron` or some other scheduler, you may need to 
+edit [the `shebang` line](https://en.wikipedia.org/wiki/Shebang_(Unix)) to point to your virtual environment's Python executable. Example:
+
+Change:
+
+```
+#!/bin/env python3
+```
+
+Pointing to the virtual environment (showing a potential Raspberry Pi example):
+
+```
+#!/home/pi/venv/bin/python3
 ```
 
 ## Unix Load Average Logger
@@ -29,7 +47,7 @@ load average to the OculusD service: `nix_load_average_logger/nix_load_average_l
 Sample run:
 
 ```bash
-$ python3 nix_load_average_logger/nix_load_average_logger_root_acc.py -e ...your_root_account_email_address... -t ...your_thing_id...
+(venv) $ python3 nix_load_average_logger/nix_load_average_logger_root_acc.py -e ...your_root_account_email_address... -t ...your_thing_id...
 Loading root_account "...your_root_account_email_address..."
 Authenticating root_account
     Cached token timestamp: 1542335636

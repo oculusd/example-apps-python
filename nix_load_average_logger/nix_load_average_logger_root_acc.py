@@ -11,6 +11,7 @@ from odc_pyadminlibs.actions.data import log_data_with_root_account
 import os, sys, getopt
 from datetime import datetime
 
+
 ROOT_ACC_EMAIL = None
 THING_ID = None
 
@@ -54,6 +55,15 @@ def load_root_account()->RootAccount:
         print_help()
 
 
+def renew_root_account_auth_token(root_account: RootAccount)->RootAccount:
+    root_account.root_account_session_token = None
+    root_account.root_account_session_create_timestamp = 0
+    auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
+    if auth_result['IsError'] is False:
+        root_account = auth_result['RootAccountObj']
+    return root_account
+
+
 def auth_root_account(root_account: RootAccount)->RootAccount:
     now = get_utc_timestamp()
     if root_account.root_account_session_create_timestamp is not None:
@@ -61,19 +71,13 @@ def auth_root_account(root_account: RootAccount)->RootAccount:
             print('\tCached token timestamp: {}'.format(root_account.root_account_session_create_timestamp))
             print('\t                   now: {}'.format(now))
             if root_account.root_account_session_create_timestamp > (now-60):
-                root_account.root_account_session_token = None
-                root_account.root_account_session_create_timestamp = 0
-                auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
-                if auth_result['IsError'] is False:
-                    root_account = auth_result['RootAccountObj']
+                root_account = renew_root_account_auth_token(root_account=root_account)
+            elif (now-root_account.root_account_session_create_timestamp) > ((60*60*24)-30):
+                root_account = renew_root_account_auth_token(root_account=root_account)
             else:
                 print('\tUsing cached token...')
         else:
-            root_account.root_account_session_token = None
-            root_account.root_account_session_create_timestamp = 0
-            auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
-            if auth_result['IsError'] is False:
-                root_account = auth_result['RootAccountObj']
+            root_account = renew_root_account_auth_token(root_account=root_account)
     else:
         auth_result = authenticate_root_account(root_account=root_account, persist_token=True)
         if auth_result['IsError'] is False:
@@ -115,7 +119,11 @@ def record_load_average(root_account: RootAccount, thing: Thing):
     if result['IsError'] is False:
         print('\tNumber of records captured: {}'.format(result['RecordsCaptured']))
     else:
-        print('\tError Message: {}'.format(result['ErrorMessage']))
+        if 'Not authorized' in result['ErrorMessage']:
+            root_account = renew_root_account_auth_token(root_account=root_account)
+            print('\tRoot account session expired. Reset... This should work again on the next round.')
+        else:
+            print('\tError Message: {}'.format(result['ErrorMessage']))
     if result['RecordsCaptured'] == 0 or result['IsError'] is True:
         reset_tokens(root_account=root_account, thing=thing)
         print('\tBoth root account and thing tokens have been reset. Re-authentication will be forced on the next run')
